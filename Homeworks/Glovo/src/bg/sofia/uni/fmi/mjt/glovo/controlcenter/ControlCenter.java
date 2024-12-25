@@ -121,21 +121,14 @@ public class ControlCenter implements ControlCenterApi {
             return null;
         }
 
-        if (shippingMethod == ShippingMethod.FASTEST) {
-            return
-                estimateFastestDelivery(pathToClient, pathToCarDeliveryGuy, pathToBikeDeliveryGuy, maxPrice, maxTime);
-        } else if (shippingMethod == ShippingMethod.CHEAPEST) {
-            return
-                estimateCheapestDelivery(pathToClient, pathToCarDeliveryGuy, pathToBikeDeliveryGuy, maxPrice, maxTime);
-        } else {
-            return null;
-        }
+        return estimateOptimalDelivery(pathToClient, pathToCarDeliveryGuy, pathToBikeDeliveryGuy,
+            maxPrice, maxTime, shippingMethod);
     }
 
-    private DeliveryInfo estimateFastestDelivery(Pair<Location, Integer> pathToClient,
+    private DeliveryInfo estimateOptimalDelivery(Pair<Location, Integer> pathToClient,
                                                  Pair<Location, Integer> pathToCarDeliveryGuy,
                                                  Pair<Location, Integer> pathToBikeDeliveryGuy,
-                                                 double maxPrice, int maxTime) {
+                                                 double maxPrice, int maxTime, ShippingMethod shippingMethod) {
         OptimalDelivery bikeDelivery = new OptimalDelivery(pathToClient, pathToBikeDeliveryGuy, DeliveryType.BIKE);
         OptimalDelivery carDelivery = new OptimalDelivery(pathToClient, pathToCarDeliveryGuy, DeliveryType.CAR);
 
@@ -143,52 +136,27 @@ public class ControlCenter implements ControlCenterApi {
         boolean isCarDeliveryGuyInRange = checkIsDeliveryInRange(carDelivery, maxPrice, maxTime);
 
         if (isBikeDeliveryGuyInRange && isCarDeliveryGuyInRange) {
-            if (bikeDelivery.getTime() < carDelivery.getTime()) {
-                return new DeliveryInfo(pathToBikeDeliveryGuy.key(), bikeDelivery.getPrice(),
-                    bikeDelivery.getTime(), bikeDelivery.getDeliveryType());
-            } else {
-                return new DeliveryInfo(pathToCarDeliveryGuy.key(), carDelivery.getPrice(),
-                    carDelivery.getTime(), carDelivery.getDeliveryType());
+            if (shippingMethod == ShippingMethod.FASTEST) {
+                return bikeDelivery.getTime() < carDelivery.getTime() ?
+                    createDeliveryInfo(bikeDelivery, pathToBikeDeliveryGuy) :
+                    createDeliveryInfo(carDelivery, pathToCarDeliveryGuy);
+            } else if (shippingMethod == ShippingMethod.CHEAPEST) {
+                return bikeDelivery.getPrice() < carDelivery.getPrice() ?
+                    createDeliveryInfo(bikeDelivery, pathToBikeDeliveryGuy) :
+                    createDeliveryInfo(carDelivery, pathToCarDeliveryGuy);
             }
         } else if (isBikeDeliveryGuyInRange) {
-            return new DeliveryInfo(pathToBikeDeliveryGuy.key(), bikeDelivery.getPrice(),
-                bikeDelivery.getTime(), bikeDelivery.getDeliveryType());
+            return createDeliveryInfo(bikeDelivery, pathToBikeDeliveryGuy);
         } else if (isCarDeliveryGuyInRange) {
-            return new DeliveryInfo(pathToCarDeliveryGuy.key(), carDelivery.getPrice(),
-                carDelivery.getTime(), carDelivery.getDeliveryType());
+            return createDeliveryInfo(carDelivery, pathToCarDeliveryGuy);
         }
 
         return null;
     }
 
-    private DeliveryInfo estimateCheapestDelivery(Pair<Location, Integer> pathToClient,
-                                                  Pair<Location, Integer> pathToCarDeliveryGuy,
-                                                  Pair<Location, Integer> pathToBikeDeliveryGuy,
-                                                  double maxPrice, int maxTime) {
-
-        OptimalDelivery bikeDelivery = new OptimalDelivery(pathToClient, pathToBikeDeliveryGuy, DeliveryType.BIKE);
-        OptimalDelivery carDelivery = new OptimalDelivery(pathToClient, pathToCarDeliveryGuy, DeliveryType.CAR);
-
-        boolean isBikeDeliveryGuyInRange = checkIsDeliveryInRange(bikeDelivery, maxPrice, maxTime);
-        boolean isCarDeliveryGuyInRange = checkIsDeliveryInRange(carDelivery, maxPrice, maxTime);
-
-        if (isBikeDeliveryGuyInRange && isCarDeliveryGuyInRange) {
-            if (bikeDelivery.getPrice() < carDelivery.getPrice()) {
-                return new DeliveryInfo(pathToBikeDeliveryGuy.key(), bikeDelivery.getPrice(),
-                    bikeDelivery.getTime(), bikeDelivery.getDeliveryType());
-            } else {
-                return new DeliveryInfo(pathToCarDeliveryGuy.key(), carDelivery.getPrice(),
-                    carDelivery.getTime(), carDelivery.getDeliveryType());
-            }
-        } else if (isBikeDeliveryGuyInRange) {
-            return new DeliveryInfo(pathToBikeDeliveryGuy.key(), bikeDelivery.getPrice(),
-                bikeDelivery.getTime(), bikeDelivery.getDeliveryType());
-        } else if (isCarDeliveryGuyInRange) {
-            return new DeliveryInfo(pathToCarDeliveryGuy.key(), carDelivery.getPrice(),
-                carDelivery.getTime(), carDelivery.getDeliveryType());
-        }
-
-        return null;
+    private DeliveryInfo createDeliveryInfo(OptimalDelivery delivery, Pair<Location, Integer> deliveryGuyPath) {
+        return new DeliveryInfo(deliveryGuyPath.key(), delivery.getPrice(),
+            delivery.getTime(), delivery.getDeliveryType());
     }
 
     boolean checkIsDeliveryInRange(OptimalDelivery delivery, double maxPrice, int maxTime) {
