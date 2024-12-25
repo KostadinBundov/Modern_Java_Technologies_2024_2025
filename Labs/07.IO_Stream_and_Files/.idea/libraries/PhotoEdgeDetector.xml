@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="PhotoEdgeDetector">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/PhotoEdgeDetector/PhotoEdgeDetector.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
