@@ -19,22 +19,40 @@ public class ListPollsCommand implements CommandAction {
             return "{\"status\":\"ERROR\",\"message\":\"No active polls available.\"}";
         }
 
-        StringBuilder response = new StringBuilder("Available Polls:\n");
+        StringBuilder response = new StringBuilder("{\"status\":\"OK\",\"polls\":{");
+
         for (var entry : polls.entrySet()) {
-            int id = entry.getKey();
-            Poll poll = entry.getValue();
-            response.append("Poll ID: ").append(id).append("\n")
-                .append("Question: ").append(poll.question()).append("\n")
-                .append("Options:\n");
-
-            for (var option : poll.options().entrySet()) {
-                response.append("  - ").append(option.getKey())
-                    .append(": ").append(option.getValue()).append(" votes\n");
-            }
-
-            response.append("\n");
+            response.append(formatPoll(entry.getKey(), entry.getValue())).append(",");
         }
 
+        if (!polls.isEmpty()) {
+            response.deleteCharAt(response.length() - 1);
+        }
+
+        response.append("}}");
+
         return response.toString();
+    }
+
+    private String formatPoll(int pollId, Poll poll) {
+        return "\"" + pollId + "\":{" +
+            "\"question\":\"" + poll.question() + "\"," +
+            "\"options\":{" +
+            formatOptions(poll.options()) +
+            "}}";
+    }
+
+    private String formatOptions(Map<String, Integer> options) {
+        StringBuilder optionsJson = new StringBuilder();
+        for (var option : options.entrySet()) {
+            optionsJson.append("\"").append(option.getKey()).append("\":")
+                .append(option.getValue()).append(",");
+        }
+
+        if (!options.isEmpty()) {
+            optionsJson.deleteCharAt(optionsJson.length() - 1);
+        }
+
+        return optionsJson.toString();
     }
 }

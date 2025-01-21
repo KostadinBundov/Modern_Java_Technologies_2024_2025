@@ -9,7 +9,7 @@ import java.util.Scanner;
 
 public class Client {
     private static final String SERVER_HOST = "localhost";
-    private static final int SERVER_PORT = 8080; // Същият порт като сървъра
+    private static final int SERVER_PORT = 8080;
     private static final int BUFFER_SIZE = 2000;
 
     private static ByteBuffer buffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
@@ -51,7 +51,9 @@ public class Client {
         }
     }
 
-    private static void sendToServer(SocketChannel socketChannel, String command, ByteBuffer buffer) throws IOException {
+    private static void sendToServer(SocketChannel socketChannel,
+                                     String command,
+                                     ByteBuffer buffer) throws IOException {
         buffer.clear();
         buffer.put(command.getBytes(StandardCharsets.UTF_8));
         buffer.flip();

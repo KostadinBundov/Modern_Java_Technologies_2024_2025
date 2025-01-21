@@ -15,7 +15,7 @@ public class InMemoryPollRepository implements PollRepository {
     }
 
     @Override
-    public int addPoll(Poll poll) {
+    public synchronized int addPoll(Poll poll) {
         int currId = idCounter;
         data.put(idCounter, poll);
         idCounter++;
@@ -23,17 +23,17 @@ public class InMemoryPollRepository implements PollRepository {
     }
 
     @Override
-    public Poll getPoll(int pollId) {
+    public synchronized Poll getPoll(int pollId) {
         return data.get(pollId);
     }
 
     @Override
-    public Map<Integer, Poll> getAllPolls() {
+    public synchronized Map<Integer, Poll> getAllPolls() {
         return Map.copyOf(data);
     }
 
     @Override
-    public void clearAllPolls() {
+    public synchronized void clearAllPolls() {
         data.clear();
     }
 }

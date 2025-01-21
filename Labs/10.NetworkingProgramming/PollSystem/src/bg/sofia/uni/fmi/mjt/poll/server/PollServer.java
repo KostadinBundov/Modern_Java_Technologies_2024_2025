@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
 public class PollServer {
+    private static final int DEFAULT_PORT = 8080;
     private static final int BUFFER_SIZE = 2000;
     private static final String HOST = "localhost";
 
@@ -33,11 +34,9 @@ public class PollServer {
     }
 
     public static void main(String[] args) {
-        // Създаване на репозитория за анкети
         InMemoryPollRepository repository = new InMemoryPollRepository();
 
-        // Създаване и стартиране на сървъра
-        PollServer server = new PollServer(8080, repository);
+        PollServer server = new PollServer(DEFAULT_PORT, repository);
         System.out.println("Starting PollServer...");
         server.start();
     }
@@ -51,47 +50,58 @@ public class PollServer {
             isServerWorking = true;
 
             while (isServerWorking) {
-                try {
-                    int readyChannels = selector.select();
-
-                    if (readyChannels == 0) {
-                        continue;
-                    }
-                } catch (IOException e) {
-                    System.out.println("Error occurred while processing client request: " + e.getMessage());
-                }
-
-                Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
-
-                while (keyIterator.hasNext()) {
-                    SelectionKey key = keyIterator.next();
-
-                    if (key.isReadable()) {
-                        SocketChannel clientChannel = (SocketChannel) key.channel();
-                        String clientInput = getClientInput(clientChannel);
-                        System.out.println(clientInput);
-
-                        if (clientInput == null) {
-                            continue;
-                        }
-
-                        try {
-                            String output = CommandExecutor.execute(CommandCreator.createCommand(clientInput, repository));
-                            writeClientOutput(clientChannel, output);
-                        } catch (IllegalArgumentException e) {
-                            writeClientOutput(clientChannel, "{\"status\":\"ERROR\",\"message\":\"Invalid command: " + e.getMessage() + "\"}");
-                        }
-                    } else if (key.isAcceptable()) {
-                        accept(selector, key);
-                    }
-
-                    keyIterator.remove();
-                }
+                processSelector();
             }
 
         } catch (IOException e) {
             throw new UncheckedIOException("failed to start server", e);
         }
+    }
+
+    private void processSelector() throws IOException {
+        try {
+            int readyChannels = selector.select();
+
+            if (readyChannels == 0) {
+                return;
+            }
+        } catch (IOException e) {
+            System.out.println("Error occurred while processing client request: " + e.getMessage());
+        }
+
+        Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
+
+        while (keyIterator.hasNext()) {
+            SelectionKey key = keyIterator.next();
+
+            if (key.isReadable()) {
+                handleReadableKey(key);
+            } else if (key.isAcceptable()) {
+                accept(selector, key);
+            }
+
+            keyIterator.remove();
+        }
+    }
+
+    private void handleReadableKey(SelectionKey key) throws IOException {
+        SocketChannel clientChannel = (SocketChannel) key.channel();
+        String clientInput = getClientInput(clientChannel);
+        System.out.println(clientInput);
+
+        if (clientInput == null) {
+            return;
+        }
+
+        try {
+            String output = CommandExecutor
+                .execute(CommandCreator.createCommand(clientInput, repository));
+            writeClientOutput(clientChannel, output);
+        } catch (IllegalArgumentException e) {
+            writeClientOutput(clientChannel, "{\"status\":\"ERROR\",\"message\":\"Invalid" +
+                " command: " + e.getMessage() + "\"}");
+        }
+
     }
 
     public void stop() {

@@ -12,7 +12,8 @@ public class CommandCreator {
     private CommandCreator() { }
 
     public static CommandAction createCommand(String input, PollRepository repo) {
-        String[] args = input.split(" ");
+        String clearedInput = input.replace(System.lineSeparator(), "");
+        String[] args = clearedInput.split(" ");
         String command = args[0];
 
         return switch (command) {

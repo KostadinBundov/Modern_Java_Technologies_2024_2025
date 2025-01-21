@@ -19,6 +19,22 @@ public class CreatePollCommand implements CommandAction {
 
     @Override
     public String execute() {
+        for (Poll poll : repository.getAllPolls().values()) {
+            if (poll.question().equals(question)) {
+                return "{\"status\":\"ERROR\",\"message\":\"A poll with the same question already exists.\"}";
+            }
+        }
+
+        if (question == null || question.isBlank()) {
+            return
+                "{\"status\":\"ERROR\",\"message\":\"Usage:create-poll " +
+                    "<question> <option-1> <option-2> [... <option-N>]\"}";
+        }
+
+        if (answers == null || answers.length < 2) {
+            return "{\"status\":\"ERROR\",\"message\":\"Poll must have at least two options.\"}";
+        }
+
         Poll poll = new Poll(question, createOptionsMap(answers));
         int id = repository.addPoll(poll);
         return String.format("{\"status\":\"OK\",\"message\":\"Poll %d created successfully.\"}", id);
